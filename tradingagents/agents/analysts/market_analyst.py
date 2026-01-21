@@ -3,6 +3,7 @@ import time
 import json
 from tradingagents.agents.utils.agent_utils import get_stock_data, get_indicators
 from tradingagents.dataflows.config import get_config
+from tradingagents.agents.prompts_ko import get_prompt, get_common_prefix
 
 
 def create_market_analyst(llm):
@@ -12,13 +13,22 @@ def create_market_analyst(llm):
         ticker = state["company_of_interest"]
         company_name = state["company_of_interest"]
 
+        # 설정에서 프롬프트 언어 확인
+        config = get_config()
+        prompt_language = config.get("prompt_language", "en")
+
         tools = [
             get_stock_data,
             get_indicators,
         ]
 
-        system_message = (
-            """You are a trading assistant tasked with analyzing financial markets. Your role is to select the **most relevant indicators** for a given market condition or trading strategy from the following list. The goal is to choose up to **8 indicators** that provide complementary insights without redundancy. Categories and each category's indicators are:
+        # 한국어 또는 영어 프롬프트 선택
+        ko_prompt = get_prompt("market_analyst", prompt_language)
+        if ko_prompt:
+            system_message = ko_prompt
+        else:
+            system_message = (
+                """You are a trading assistant tasked with analyzing financial markets. Your role is to select the **most relevant indicators** for a given market condition or trading strategy from the following list. The goal is to choose up to **8 indicators** that provide complementary insights without redundancy. Categories and each category's indicators are:
 
 Moving Averages:
 - close_50_sma: 50 SMA: A medium-term trend indicator. Usage: Identify trend direction and serve as dynamic support/resistance. Tips: It lags price; combine with faster indicators for timely signals.
@@ -43,21 +53,17 @@ Volume-Based Indicators:
 - vwma: VWMA: A moving average weighted by volume. Usage: Confirm trends by integrating price action with volume data. Tips: Watch for skewed results from volume spikes; use in combination with other volume analyses.
 
 - Select indicators that provide diverse and complementary information. Avoid redundancy (e.g., do not select both rsi and stochrsi). Also briefly explain why they are suitable for the given market context. When you tool call, please use the exact name of the indicators provided above as they are defined parameters, otherwise your call will fail. Please make sure to call get_stock_data first to retrieve the CSV that is needed to generate indicators. Then use get_indicators with the specific indicator names. Write a very detailed and nuanced report of the trends you observe. Do not simply state the trends are mixed, provide detailed and finegrained analysis and insights that may help traders make decisions."""
-            + """ Make sure to append a Markdown table at the end of the report to organize key points in the report, organized and easy to read."""
-        )
+                + """ Make sure to append a Markdown table at the end of the report to organize key points in the report, organized and easy to read."""
+            )
+
+        # 공통 프롬프트 prefix
+        common_prefix = get_common_prefix(prompt_language)
 
         prompt = ChatPromptTemplate.from_messages(
             [
                 (
                     "system",
-                    "You are a helpful AI assistant, collaborating with other assistants."
-                    " Use the provided tools to progress towards answering the question."
-                    " If you are unable to fully answer, that's OK; another assistant with different tools"
-                    " will help where you left off. Execute what you can to make progress."
-                    " If you or any other assistant has the FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL** or deliverable,"
-                    " prefix your response with FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL** so the team knows to stop."
-                    " You have access to the following tools: {tool_names}.\n{system_message}"
-                    "For your reference, the current date is {current_date}. The company we want to look at is {ticker}",
+                    common_prefix,
                 ),
                 MessagesPlaceholder(variable_name="messages"),
             ]

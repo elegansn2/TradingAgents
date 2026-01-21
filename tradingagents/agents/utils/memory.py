@@ -1,25 +1,45 @@
 import chromadb
 from chromadb.config import Settings
 from openai import OpenAI
+import os
 
 
 class FinancialSituationMemory:
     def __init__(self, name, config):
-        if config["backend_url"] == "http://localhost:11434/v1":
+        self.llm_provider = config.get("llm_provider", "openai")
+
+        if self.llm_provider == "google":
+            # Google Gemini embeddings 사용
+            import google.generativeai as genai
+            genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+            self.genai = genai
+            self.embedding = "models/text-embedding-004"
+        elif config.get("backend_url") == "http://localhost:11434/v1":
             self.embedding = "nomic-embed-text"
+            self.client = OpenAI(base_url=config["backend_url"])
         else:
             self.embedding = "text-embedding-3-small"
-        self.client = OpenAI(base_url=config["backend_url"])
+            self.client = OpenAI(base_url=config.get("backend_url"))
+
         self.chroma_client = chromadb.Client(Settings(allow_reset=True))
         self.situation_collection = self.chroma_client.create_collection(name=name)
 
     def get_embedding(self, text):
-        """Get OpenAI embedding for a text"""
-        
-        response = self.client.embeddings.create(
-            model=self.embedding, input=text
-        )
-        return response.data[0].embedding
+        """Get embedding for a text (supports OpenAI and Google Gemini)"""
+
+        if self.llm_provider == "google":
+            # Google Gemini embeddings
+            result = self.genai.embed_content(
+                model=self.embedding,
+                content=text
+            )
+            return result['embedding']
+        else:
+            # OpenAI embeddings
+            response = self.client.embeddings.create(
+                model=self.embedding, input=text
+            )
+            return response.data[0].embedding
 
     def add_situations(self, situations_and_advice):
         """Add financial situations and their corresponding advice. Parameter is a list of tuples (situation, rec)"""

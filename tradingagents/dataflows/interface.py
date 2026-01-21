@@ -17,6 +17,27 @@ from .alpha_vantage import (
 )
 from .alpha_vantage_common import AlphaVantageRateLimitError
 
+# ===========================================
+# 한국 시장 데이터 소스 임포트
+# ===========================================
+from .korea_stock import (
+    get_korea_stock_data,
+    get_korea_stock_indicators,
+    get_korea_stock_info,
+)
+from .korea_dart import (
+    get_korea_fundamentals,
+    get_korea_balance_sheet,
+    get_korea_cashflow,
+    get_korea_income_statement,
+    get_korea_insider_transactions,
+)
+from .korea_news import (
+    get_korea_news,
+    get_korea_global_news,
+    get_korea_insider_sentiment,
+)
+
 # Configuration and routing logic
 from .config import get_config
 
@@ -58,7 +79,11 @@ VENDOR_LIST = [
     "local",
     "yfinance",
     "openai",
-    "google"
+    "google",
+    # 한국 시장 벤더
+    "korea",
+    "korea_dart",
+    "korea_naver",
 ]
 
 # Mapping of methods to their vendor-specific implementations
@@ -68,32 +93,44 @@ VENDOR_METHODS = {
         "alpha_vantage": get_alpha_vantage_stock,
         "yfinance": get_YFin_data_online,
         "local": get_YFin_data,
+        # 한국 시장
+        "korea": get_korea_stock_data,
     },
     # technical_indicators
     "get_indicators": {
         "alpha_vantage": get_alpha_vantage_indicator,
         "yfinance": get_stock_stats_indicators_window,
-        "local": get_stock_stats_indicators_window
+        "local": get_stock_stats_indicators_window,
+        # 한국 시장
+        "korea": get_korea_stock_indicators,
     },
     # fundamental_data
     "get_fundamentals": {
         "alpha_vantage": get_alpha_vantage_fundamentals,
         "openai": get_fundamentals_openai,
+        # 한국 시장
+        "korea_dart": get_korea_fundamentals,
     },
     "get_balance_sheet": {
         "alpha_vantage": get_alpha_vantage_balance_sheet,
         "yfinance": get_yfinance_balance_sheet,
         "local": get_simfin_balance_sheet,
+        # 한국 시장
+        "korea_dart": get_korea_balance_sheet,
     },
     "get_cashflow": {
         "alpha_vantage": get_alpha_vantage_cashflow,
         "yfinance": get_yfinance_cashflow,
         "local": get_simfin_cashflow,
+        # 한국 시장
+        "korea_dart": get_korea_cashflow,
     },
     "get_income_statement": {
         "alpha_vantage": get_alpha_vantage_income_statement,
         "yfinance": get_yfinance_income_statement,
         "local": get_simfin_income_statements,
+        # 한국 시장
+        "korea_dart": get_korea_income_statement,
     },
     # news_data
     "get_news": {
@@ -101,18 +138,26 @@ VENDOR_METHODS = {
         "openai": get_stock_news_openai,
         "google": get_google_news,
         "local": [get_finnhub_news, get_reddit_company_news, get_google_news],
+        # 한국 시장
+        "korea_naver": get_korea_news,
     },
     "get_global_news": {
         "openai": get_global_news_openai,
-        "local": get_reddit_global_news
+        "local": get_reddit_global_news,
+        # 한국 시장
+        "korea_naver": get_korea_global_news,
     },
     "get_insider_sentiment": {
-        "local": get_finnhub_company_insider_sentiment
+        "local": get_finnhub_company_insider_sentiment,
+        # 한국 시장
+        "korea_naver": get_korea_insider_sentiment,
     },
     "get_insider_transactions": {
         "alpha_vantage": get_alpha_vantage_insider_transactions,
         "yfinance": get_yfinance_insider_transactions,
         "local": get_finnhub_company_insider_transactions,
+        # 한국 시장
+        "korea_dart": get_korea_insider_transactions,
     },
 }
 

@@ -24,3 +24,12 @@ rich
 questionary
 langchain_anthropic
 langchain-google-genai
+
+# ===========================================
+# 한국 시장 추가 의존성
+# ===========================================
+pykrx               # 한국거래소(KRX) 주가 데이터
+dart-fss            # DART 전자공시 (재무제표)
+beautifulsoup4      # 네이버 뉴스 스크래핑
+lxml                # HTML/XML 파싱
+python-dotenv       # .env 파일 로딩
